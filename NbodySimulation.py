@@ -18,6 +18,7 @@ class Space:
         self.tree = None
         self.grid = grid
 
+    #advance to next frame
     def advance(self):
         for body in self.bodies:
             xMin, xMax = self.xBound
@@ -26,6 +27,7 @@ class Space:
             self.yBound = min(body.position.y, yMin), max(body.position.y, yMax)
             body.updatePosition()
 
+    #merge 2 bodies together if they have collided
     def mergeBody(self, b1, b2):
         if b1.mass > b2.mass:
             b1.velocity.x = (b1.mass*b1.velocity.x + b2.mass*b2.velocity.x)/(b1.mass + b2.mass)
@@ -42,6 +44,7 @@ class Space:
             self.tree.root.constructTree(self.bodies, xMin, xMax, yMin, yMax, self.width/5000e6, self.grid)
             self.canvas.delete(b2.obj)
 
+    #convert from actual value to screen value for display
     def convertToDisplayVal(self, val):
         val = val*self.width/5000e6
         return val
@@ -71,7 +74,7 @@ class Body:
         return (3 * mass / (4*pi*objectDensity))**(1/3)
 
     #quadtree method to calculate acceleration
-    def aQuadTree(self, currNode, pos):
+    def a(self, currNode, pos):
         theta = 1
         if isinstance(currNode, list):
             if currNode == [] or currNode[0] == self:
@@ -86,8 +89,9 @@ class Body:
             if currNode.width/mag(r) < theta:
                 return norm(r) * G * currNode.m / (mag(r)**2)
             else:
-                return self.aQuadTree(currNode.quad1, pos) + self.aQuadTree(currNode.quad2, pos) + self.aQuadTree(currNode.quad3, pos) + self.aQuadTree(currNode.quad4, pos)
+                return self.a(currNode.quad1, pos) + self.a(currNode.quad2, pos) + self.a(currNode.quad3, pos) + self.a(currNode.quad4, pos)
 
+    #check if two bodies has collided
     def checkCollision(self, body):
         r = body.position - self.position
         if mag(r) < body.radius + self.radius:
@@ -95,20 +99,22 @@ class Body:
             self.space.mergeBody(self, body)
             self.space.collided = False
 
+    #calculate position of body at t + dt using Runge-Kutth 4th order
     def updatePosition(self):
         position1 = self.position
-        k1 = self.aQuadTree(self.space.tree.root, position1)
+        k1 = self.a(self.space.tree.root, position1)
         position2 = self.position + self.velocity * dt * 0.5 + k1 * (dt/2)**2 * 0.5
-        k2 = self.aQuadTree(self.space.tree.root, position2)
+        k2 = self.a(self.space.tree.root, position2)
         position3 = self.position + self.velocity * dt * 0.5 + k2 * (dt/2)**2 * 0.5
-        k3 = self.aQuadTree(self.space.tree.root, position3)
+        k3 = self.a(self.space.tree.root, position3)
         position4 = self.position + self.velocity * dt + k3 * (dt)**2 * 0.5
-        k4 = self.aQuadTree(self.space.tree.root, position4)
+        k4 = self.a(self.space.tree.root, position4)
 
         a = (1/6) * (k1 + 2*k2 + 2*k3 + k4)
         self.position += self.velocity * dt + a * dt**2 * 0.5
         self.velocity += a * dt
 
+    #redraw object based on new mass
     def updateMass(self, addMass):
         self.mass += addMass
         self.radius = self.massToRadius(self.mass)
