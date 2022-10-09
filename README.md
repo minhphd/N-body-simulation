@@ -33,5 +33,5 @@ After click enter, the simulation will run full screen based on your input. Sit 
 
 ![](https://github.com/minhphd/N-body-simulation/blob/main/media/withGrid.png)
 
-![](https://github.com/minhphd/N-body-simulation/blob/main/media/withoutGrid.png)
+![](https://github.com/minhphd/N-body-simulation/blob/main/media/without.png)
 
